@@ -5,7 +5,9 @@ var CANVAS_HEIGHT = 500;
 var mousePosition = {
     x: 0,
     y: 0
-}
+};
+
+var timeStarted = Date.now();
 
 ctx.font = '30px Arial';
 
@@ -32,10 +34,11 @@ player.vy = 15;
 player.type = "player";
 player.text = "P";
 player.id = "player1";
+player.hp = 10;
 player.bounce = true;
 
 var entities = {};
-entities[player.id] = player;
+//entities[player.id] = player;
 
 function createEnemy(){
     var enemy = Object.create(Entity);
@@ -56,32 +59,61 @@ function genRandomInRange(range, min){
    return base + min;
 }
 
-createEnemy();
-createEnemy();
-createEnemy();
+
+function restart(){
+    timeStarted = Date.now();
+    player.hp = 10;
+    entities = {};
+    createEnemy();
+    createEnemy();
+    createEnemy();
+}
+
+restart();
 
 setInterval(update, 50);
 
 function update(){
     ctx.clearRect(0,0,CANVAS_WIDTH, CANVAS_HEIGHT);
+    var playerHit = false;
    //moveObject(player);
    //drawObject(player);
    for(var e in entities){
        var entity = entities[e];
        if(entity.type === "enemy") {
-           var hittingPlayer = testPTPCollision(entities["player1"], entity);
+           var hittingPlayer = testPTPCollision(player, entity);
            //console.log(entities["player1"], entity);
            if(hittingPlayer){
                console.log("enemy " + entity.id, " is hitting player");
+               //player.hp -= 1;
+               playerHit = true;
+               //entities["player1"].gettingHit = true;
            }
        }
        if(entity.type === "player"){
-           entity.mouseHitting = testPTPCollision(entities["player1"], mousePosition);
+            
        }
+       
        moveObject(entity);
        drawObject(entity);
    }
+   //move this back later
+   var mouseHit = testPTPCollision(player, mousePosition);
+    player.gettingHit = playerHit || mouseHit;
+    if(player.gettingHit){
+        player.hp -= 1;
+    }
+    if(player.hp <= 0){
+        var timeSurvived = Date.now() - timeStarted;
+        console.log("died, lasted " + timeSurvived/1000 + " secs");
+        restart();
+    }
+   
+   moveObject(player);
+   drawObject(player);
+   
    drawMouseCords();
+   ctx.fillText(player.hp + " Hp", 0, 30);
 }
 
 function moveObject(object){
@@ -99,7 +131,7 @@ function moveObject(object){
 }
 function drawObject(object){
     ctx.save();
-    if(object.mouseHitting){
+    if(object.gettingHit){
         ctx.fillStyle = "#ff0000";
     }
     ctx.fillText(object.text, object.x, object.y);
