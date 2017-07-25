@@ -16,6 +16,15 @@ var score = 0;
 
 ctx.font = '30px Arial';
 
+
+var keyMap = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    fire: false
+};
+
 var Entity = {
     id: null,
     x: 0,
@@ -29,7 +38,7 @@ var Entity = {
     color: null,
     visible: true,
     timer: 0,
-    atkSpd: 60, //1/s
+    atkSpd: 1, //1/s
     getCenterX: function(){
         return this.x - this.width/2;
     },
@@ -46,14 +55,15 @@ var enemySpdMin = 2;
 var player = Object.create(Entity);
 player.x = 20;
 player.y = 20;
-player.vx = 3;
-player.vy = 5;
+player.vx = 0;
+player.vy = 0;
+player.speed = 5;
 player.type = "player";
 player.text = "P";
 player.id = "player1";
 player.hp = 10;
 player.color = 'green';
-player.bounce = true;
+player.bounce = false;
 player.width = 20;
 player.height = 20;
 
@@ -156,9 +166,8 @@ function update(){
     }
     //alternatively could divide a base number by attack spd Math.round(60/player.atkSpd)
     //but this seems to be a bit unwieldy, at least it would be need to be limited
-    if(frameCount % player.atkSpd === 0){ // every 1 sec
-        createBullet(player);
-    }
+    player.timer += player.atkSpd;
+    
     
     ctx.clearRect(0,0,CANVAS_WIDTH, CANVAS_HEIGHT);
     var playerHit = false;
@@ -182,7 +191,7 @@ function update(){
                
                
                 if(entity.category === "atkSpd"){
-                    player.atkSpd -= 3;
+                    player.atkSpd += 0.5;
                 }else if(entity.category === "score"){
                     score += 1000;
                 }
@@ -247,7 +256,11 @@ function update(){
 update();
 
 function moveObject(object){
-    if(!DEBUG){
+    if(!DEBUG && object.type !== "player"){
+        object.x += object.vx;
+        object.y += object.vy;
+    }else if(object.type === "player"){
+        checkPlayerMove();
         object.x += object.vx;
         object.y += object.vy;
     }
@@ -259,8 +272,20 @@ function moveObject(object){
         if(object.y + object.height/2 > CANVAS_HEIGHT || object.getCenterY() < 0){
             object.vy *= -1;
         }
-    }else {
+    }else {// this really should be for something else but I'll put the player
+        //not leaving the stage logic here
         //remove if out of bounds but how to know if its a bullet or an enemy?
+        if(object.x + object.width/2 > CANVAS_WIDTH) {
+            object.x = CANVAS_WIDTH - object.width/2;
+        }else if(object.x < 0 + object.width/2){
+            object.x = 0 + object.width/2;
+        }
+        
+        if(object.y + object.height/2 > CANVAS_HEIGHT) {
+            object.y = CANVAS_HEIGHT - object.height/2;
+        }else if(object.y < 0 + object.height/2){
+            object.y = 0 + object.height/2;
+        }
     }
 }
 function drawObject(object){
@@ -303,10 +328,76 @@ document.onmousemove = function(mouse){
     }
 };
 
+document.onclick = function(event){
+    if(player.timer > 60){ // every 1 sec
+        createBullet(player);
+        player.timer = 0;
+    }
+};
+
 function drawMouseCords(){
     var text = "("+mousePosition.x+", "+mousePosition.y+")";
     ctx.save();
     ctx.font = "10px Arial";
     ctx.fillText(text, mousePosition.x, mousePosition.y);
     ctx.restore();
+}
+
+document.onkeydown = function(event){
+    if(event.key === "ArrowDown"){
+        keyMap.down = true;
+    }
+    if(event.key === "ArrowUp"){
+        keyMap.up = true;
+    }
+    if(event.key === "ArrowLeft"){
+        keyMap.left = true;
+    }
+    if(event.key === "ArrowRight"){
+        keyMap.right = true;
+    }
+    if(event.key === " "){
+        keyMap.fire = true;
+    }
+};
+
+document.onkeyup = function(event){
+    if(event.key === "ArrowDown"){
+        keyMap.down = false;
+    }
+    if(event.key === "ArrowUp"){
+        keyMap.up = false;
+    }
+    if(event.key === "ArrowLeft"){
+        keyMap.left = false;
+    }
+    if(event.key === "ArrowRight"){
+        keyMap.right = false;
+    }
+    if(event.key === " "){
+        keyMap.fire = false;
+    }
+};
+
+function checkPlayerMove(){
+    if((keyMap.up && keyMap.down) || (!keyMap.up && !keyMap.down)){
+        player.vy = 0;
+    }
+    else if(keyMap.up){
+        player.vy = -player.speed;
+    }
+    else if(keyMap.down){
+        player.vy = player.speed;
+    }
+    
+    
+    if((keyMap.left && keyMap.right) || (!keyMap.left && !keyMap.right)){
+        player.vx = 0;
+    }
+    else if(keyMap.left){
+        player.vx = -player.speed;
+    }
+    else if(keyMap.right){
+        player.vx = player.speed;
+    }
 }
