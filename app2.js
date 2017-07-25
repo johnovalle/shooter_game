@@ -12,6 +12,8 @@ var DEBUG = false;
 var timeStarted = Date.now();
 var frameCount = 0;
 
+var score = 0;
+
 ctx.font = '30px Arial';
 
 var Entity = {
@@ -55,6 +57,8 @@ player.height = 20;
 
 
 var entities = {};
+var bullets = {};
+
 //entities[player.id] = player;
 
 function createEnemy(){
@@ -74,6 +78,42 @@ function createEnemy(){
     entities[enemy.id] = enemy;
 }
 
+function createUpgrade(){
+    var upgrade = Object.create(Entity);
+    upgrade.x = genRandomInRange(CANVAS_WIDTH, 0);
+    upgrade.y = genRandomInRange(CANVAS_HEIGHT, 0);
+    upgrade.width = 20;
+    upgrade.height = 20;
+    upgrade.type = "upgrade";
+    upgrade.id = "U" + enemyCounter;
+    upgrade.color = "orange";
+    enemyCounter++; //should really be entityCounter?
+    entities[upgrade.id] = upgrade;
+}
+
+
+function createBullet(owner){
+    var bullet = Object.create(Entity);
+    bullet.x = player.x;
+    bullet.y = player.y;
+    bullet.angle = Math.random() * 360;
+    //***
+    bullet.vx = Math.cos(bullet.angle/180*Math.PI) * 5; // x/180*Math.PI converts degree to radians
+    bullet.vy = Math.sin(bullet.angle/180*Math.PI) * 5;
+    //***
+    bullet.width = 20;
+    bullet.height = 20;
+    bullet.type = "bullet";
+    bullet.id = "B" + enemyCounter;
+    bullet.color = "black";
+    bullet.owner = owner;
+    bullet.ownerId = owner.id;
+    bullet.bounce = true;
+    enemyCounter++; //should really be entityCounter?
+    bullets[bullet.id] = bullet;
+}
+
+
 function genRandomInRange(range, min){
    var base = Math.floor(Math.random() * range);
    return base + min;
@@ -83,8 +123,10 @@ function genRandomInRange(range, min){
 function restart(){
     timeStarted = Date.now();
     frameCount = 0;
+    score = 0;
     player.hp = 10;
     entities = {};
+    bullets = {};
     createEnemy();
     createEnemy();
     createEnemy();
@@ -96,9 +138,17 @@ restart();
 
 function update(){
     frameCount++;
+    score++;
     
-    if(frameCount % 100 === 0){
+    if(frameCount % 240 === 0){ //every 2 sec
         createEnemy();
+    }
+    if(frameCount % 120 === 0){ // every 2 sec
+        createUpgrade();
+    }
+    
+    if(frameCount % 60 === 0){ // every 1 sec
+        createBullet(player);
     }
     
     ctx.clearRect(0,0,CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -107,8 +157,9 @@ function update(){
    //drawObject(player);
    for(var e in entities){
        var entity = entities[e];
+       var hittingPlayer = testRTRCollision(player, entity);
        if(entity.type === "enemy") {
-           var hittingPlayer = testRTRCollision(player, entity);
+           
            //console.log(entities["player1"], entity);
            if(hittingPlayer){
                console.log("enemy " + entity.id, " is hitting player");
@@ -117,12 +168,34 @@ function update(){
                //entities["player1"].gettingHit = true;
            }
        }
-       if(entity.type === "player"){
-            
+       if(entity.type === "upgrade"){
+            if(hittingPlayer){
+               console.log("upgrade " + entity.id, " is hitting player");
+               delete entities[e];
+               score += 1000;
+               //player.hp -= 1;
+               //playerHit = true;
+               //entities["player1"].gettingHit = true;
+           }
        }
        
        moveObject(entity);
        drawObject(entity);
+   }
+   //should everything test whether its interacting with every other object
+   //would that be too slow
+   //
+   for(var b in bullets){
+        var bullet = bullets[b];
+        for(var e in entities){
+            var entity = entities[e];
+            if(entity.type === "enemy" && testRTRCollision(bullet, entity)){
+                delete entities[e];
+                delete bullets[b];
+            }
+        }
+        moveObject(bullet);
+        drawObject(bullet);
    }
    //move this back later
    var mouseHit = testPTPCollision(player, mousePosition);
@@ -141,6 +214,8 @@ function update(){
    
    drawMouseCords();
    ctx.fillText(player.hp + " Hp", 0, 30);
+   ctx.fillText("score: " + score, 200, 30);
+   
    
    requestAnimationFrame(update);
 }
@@ -159,6 +234,8 @@ function moveObject(object){
         if(object.y + object.height/2 > CANVAS_HEIGHT || object.getCenterY() < 0){
             object.vy *= -1;
         }
+    }else {
+        //remove if out of bounds but how to know if its a bullet or an enemy?
     }
 }
 function drawObject(object){
