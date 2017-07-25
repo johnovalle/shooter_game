@@ -28,6 +28,8 @@ var Entity = {
     text: "",
     color: null,
     visible: true,
+    timer: 0,
+    atkSpd: 60, //1/s
     getCenterX: function(){
         return this.x - this.width/2;
     },
@@ -86,7 +88,13 @@ function createUpgrade(){
     upgrade.height = 20;
     upgrade.type = "upgrade";
     upgrade.id = "U" + enemyCounter;
-    upgrade.color = "orange";
+    if(Math.random() >= 0.5){
+        upgrade.category = "atkSpd";
+        upgrade.color = "blue";
+    }else{
+        upgrade.category = "score";
+        upgrade.color = "orange";
+    }
     enemyCounter++; //should really be entityCounter?
     entities[upgrade.id] = upgrade;
 }
@@ -146,8 +154,9 @@ function update(){
     if(frameCount % 120 === 0){ // every 2 sec
         createUpgrade();
     }
-    
-    if(frameCount % 60 === 0){ // every 1 sec
+    //alternatively could divide a base number by attack spd Math.round(60/player.atkSpd)
+    //but this seems to be a bit unwieldy, at least it would be need to be limited
+    if(frameCount % player.atkSpd === 0){ // every 1 sec
         createBullet(player);
     }
     
@@ -170,9 +179,16 @@ function update(){
        }
        if(entity.type === "upgrade"){
             if(hittingPlayer){
+               
+               
+                if(entity.category === "atkSpd"){
+                    player.atkSpd -= 3;
+                }else if(entity.category === "score"){
+                    score += 1000;
+                }
+               
                console.log("upgrade " + entity.id, " is hitting player");
                delete entities[e];
-               score += 1000;
                //player.hp -= 1;
                //playerHit = true;
                //entities["player1"].gettingHit = true;
@@ -192,10 +208,19 @@ function update(){
             if(entity.type === "enemy" && testRTRCollision(bullet, entity)){
                 delete entities[e];
                 delete bullets[b];
+                break;
             }
         }
+        
+        bullet.timer++;
+        if(bullet.timer > 300){
+            delete bullets[b];
+            continue;
+        }
+        
         moveObject(bullet);
         drawObject(bullet);
+        
    }
    //move this back later
    var mouseHit = testPTPCollision(player, mousePosition);
