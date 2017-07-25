@@ -3,6 +3,8 @@ var ctx = canvas.getContext('2d');
 var CANVAS_WIDTH = 500;
 var CANVAS_HEIGHT = 500;
 
+ctx.font = '30px Arial';
+
 var Entity = {
     id: null,
     x: 0,
@@ -62,10 +64,16 @@ function update(){
    //drawObject(player);
    for(var e in entities){
        var entity = entities[e];
+       if(entity.type === "enemy") {
+           var hittingPlayer = testPTPCollision(entities["player1"], entity);
+           //console.log(entities["player1"], entity);
+           if(hittingPlayer){
+               console.log("enemy " + entity.id, " is hitting player");
+           }
+       }
        moveObject(entity);
        drawObject(entity);
    }
-   
 }
 
 function moveObject(object){
@@ -83,4 +91,15 @@ function moveObject(object){
 }
 function drawObject(object){
      ctx.fillText(object.text, object.x, object.y);
+}
+
+function getDistanceBetweenPoints(point1, point2){ //point to point
+    var dx = point1.x - point2.x;
+    var dy = point1.y - point2.y;
+    return Math.sqrt(dx*dx+dy*dy); //returns distance between two points
+}
+
+function testPTPCollision(entity1, entity2){ //point to point
+    var distance = getDistanceBetweenPoints(entity1, entity2);
+    return distance < 30;
 }
