@@ -10,6 +10,7 @@ var mousePosition = {
 var DEBUG = false;
 
 var timeStarted = Date.now();
+var frameCount = 0;
 
 ctx.font = '30px Arial';
 
@@ -35,12 +36,14 @@ var Entity = {
 
 
 var enemyCounter = 0;
-var enemySpdRng = 10;
-var enemySpdMin = 5;
+var enemySpdRng = 5;
+var enemySpdMin = 2;
 
 var player = Object.create(Entity);
-player.vx = 5;
-player.vy = 7;
+player.x = 20;
+player.y = 20;
+player.vx = 3;
+player.vy = 5;
 player.type = "player";
 player.text = "P";
 player.id = "player1";
@@ -79,6 +82,7 @@ function genRandomInRange(range, min){
 
 function restart(){
     timeStarted = Date.now();
+    frameCount = 0;
     player.hp = 10;
     entities = {};
     createEnemy();
@@ -91,6 +95,12 @@ restart();
 //setInterval(update, 30);
 
 function update(){
+    frameCount++;
+    
+    if(frameCount % 100 === 0){
+        createEnemy();
+    }
+    
     ctx.clearRect(0,0,CANVAS_WIDTH, CANVAS_HEIGHT);
     var playerHit = false;
    //moveObject(player);
@@ -143,10 +153,10 @@ function moveObject(object){
     }
     
     if(object.bounce){
-        if(object.x > CANVAS_WIDTH || object.x < 0){
+        if(object.x + object.width/2 > CANVAS_WIDTH || object.getCenterX() < 0){
             object.vx *= -1;
         }
-        if(object.y > CANVAS_HEIGHT || object.y < 0){
+        if(object.y + object.height/2 > CANVAS_HEIGHT || object.getCenterY() < 0){
             object.vy *= -1;
         }
     }
@@ -183,8 +193,8 @@ function testPTPCollision(entity1, entity2){ //point to point
 //get mouse position information
 
 document.onmousemove = function(mouse){
-    mousePosition.x = mouse.clientX;
-    mousePosition.y = mouse.clientY;
+    mousePosition.x = mouse.clientX - canvas.getBoundingClientRect().left;
+    mousePosition.y = mouse.clientY - canvas.getBoundingClientRect().top;
     if(DEBUG){
         player.x = mousePosition.x;
         player.y = mousePosition.y;
