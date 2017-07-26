@@ -52,21 +52,28 @@ var enemyCounter = 0;
 var enemySpdRng = 5;
 var enemySpdMin = 2;
 
-var player = Object.create(Entity);
-player.x = 20;
-player.y = 20;
-player.vx = 0;
-player.vy = 0;
-player.speed = 5;
-player.type = "player";
-player.text = "P";
-player.id = "player1";
-player.hp = 10;
-player.color = 'green';
-player.bounce = false;
-player.width = 20;
-player.height = 20;
-player.aimAngle = 0;
+var player = createPlayer();
+
+function createPlayer(){
+    var player = Object.create(Entity);
+    player.x = 20;
+    player.y = 20;
+    player.vx = 0;
+    player.vy = 0;
+    player.speed = 5;
+    player.type = "player";
+    player.text = "P";
+    player.id = "player1";
+    player.hp = 10;
+    player.color = 'green';
+    player.bounce = false;
+    player.width = 20;
+    player.height = 20;
+    player.aimAngle = 0;
+    
+    return player;
+}
+
 
 
 var entities = {};
@@ -337,27 +344,47 @@ document.onmousemove = function(mouse){
 };
 
 document.onclick = function(event){
-    if(player.timer > 60){ // every 1 sec
-        createBullet(player);
-        player.timer = 0;
-    }
+   performAttack(player);
 };
 
 document.oncontextmenu = function(event){ //right click
     event.preventDefault();
-    if(player.timer > 120){ // every 2 sec
-        //triple shot
-        // createBullet(player, player.aimAngle - 5);
-        // createBullet(player);
-        // createBullet(player, player.aimAngle + 5);
+    //performCircularAttack(player, 10);
+    performMultiAttack(player, 2, 5);
+};
+
+function performAttack(entity){
+    if(entity.timer > 60){ // every 1 sec
+        createBullet(entity);
+        entity.timer = 0;
+    }
+}
+
+function performMultiAttack(entity, amount, spread){
+    //triple shot
+    // createBullet(player, player.aimAngle - 5);
+    // createBullet(player);
+    // createBullet(player, player.aimAngle + 5);
+    createBullet(entity);
+    for(var i = 1; i<=amount; i++){
+        createBullet(entity, entity.aimAngle + spread*i);
+        createBullet(entity, entity.aimAngle - spread*i);
+    }
+    
+}
+
+function performCircularAttack(entity, amount){
+    if(entity.timer > 120){ // every 2 sec
+        
         
         //circular blast
-        for(var i = 0; i <= 360; i += 60){
-            createBullet(player, i);
+        var step = Math.floor(360/amount);
+        for(var i = 0; i <= 360; i += step){
+            createBullet(entity, i);
         }
-        player.timer = 0;
+        entity.timer = 0;
     }
-};
+}
 
 
 function drawMouseCords(){
