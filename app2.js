@@ -66,6 +66,7 @@ player.color = 'green';
 player.bounce = false;
 player.width = 20;
 player.height = 20;
+player.aimAngle = 0;
 
 
 var entities = {};
@@ -86,6 +87,7 @@ function createEnemy(){
     enemy.id = "E" + enemyCounter;
     enemy.color = "purple";
     enemy.bounce = true;
+    enemy.aimAngle = 0;
     enemyCounter++;
     entities[enemy.id] = enemy;
 }
@@ -110,11 +112,14 @@ function createUpgrade(){
 }
 
 
-function createBullet(owner){
+function createBullet(owner, overrideAngle){
     var bullet = Object.create(Entity);
-    bullet.x = player.x;
-    bullet.y = player.y;
-    bullet.angle = Math.random() * 360;
+    bullet.x = owner.x;
+    bullet.y = owner.y;
+    bullet.angle = owner.aimAngle;   //Math.random() * 360;
+    if(overrideAngle){
+        bullet.angle = overrideAngle;
+    }
     //***
     bullet.vx = Math.cos(bullet.angle/180*Math.PI) * 5; // x/180*Math.PI converts degree to radians
     bullet.vy = Math.sin(bullet.angle/180*Math.PI) * 5;
@@ -232,8 +237,8 @@ function update(){
         
    }
    //move this back later
-   var mouseHit = testPTPCollision(player, mousePosition);
-    player.gettingHit = playerHit || mouseHit;
+   //var mouseHit = testPTPCollision(player, mousePosition);
+    player.gettingHit = playerHit; // || mouseHit;
     if(player.gettingHit  && !DEBUG){
         player.hp -= 1;
     }
@@ -322,6 +327,9 @@ function testPTPCollision(entity1, entity2){ //point to point
 document.onmousemove = function(mouse){
     mousePosition.x = mouse.clientX - canvas.getBoundingClientRect().left;
     mousePosition.y = mouse.clientY - canvas.getBoundingClientRect().top;
+    //setting this value here actually causes a glitch where if you arent moving the mouse shots will not change angle.
+    player.aimAngle = Math.atan2(mousePosition.y - player.y, mousePosition.x - player.x) / Math.PI * 180; //why is this converted from radians to degrees?
+                                                                                    //because it's getting converted back into radians
     if(DEBUG){
         player.x = mousePosition.x;
         player.y = mousePosition.y;
@@ -334,6 +342,23 @@ document.onclick = function(event){
         player.timer = 0;
     }
 };
+
+document.oncontextmenu = function(event){ //right click
+    event.preventDefault();
+    if(player.timer > 120){ // every 2 sec
+        //triple shot
+        // createBullet(player, player.aimAngle - 5);
+        // createBullet(player);
+        // createBullet(player, player.aimAngle + 5);
+        
+        //circular blast
+        for(var i = 0; i <= 360; i += 60){
+            createBullet(player, i);
+        }
+        player.timer = 0;
+    }
+};
+
 
 function drawMouseCords(){
     var text = "("+mousePosition.x+", "+mousePosition.y+")";
