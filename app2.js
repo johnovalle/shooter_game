@@ -6,13 +6,16 @@ var mousePosition = {
     x: 0,
     y: 0
 };
-
 var DEBUG = false;
-
 var timeStarted = Date.now();
 var frameCount = 0;
-
 var score = 0;
+
+var enemyCounter = 0;
+var enemySpdRng = 5;
+var enemySpdMin = 2;
+
+var blurEffect = false;
 
 ctx.font = '30px Arial';
 
@@ -48,9 +51,6 @@ var Entity = {
 };
 
 
-var enemyCounter = 0;
-var enemySpdRng = 5;
-var enemySpdMin = 2;
 
 var player = createPlayer();
 
@@ -144,10 +144,7 @@ function createBullet(owner, overrideAngle){
 }
 
 
-function genRandomInRange(range, min){
-   var base = Math.floor(Math.random() * range);
-   return base + min;
-}
+
 
 
 function restart(){
@@ -183,6 +180,9 @@ function update(){
     
     ctx.clearRect(0,0,CANVAS_WIDTH, CANVAS_HEIGHT);
     var playerHit = false;
+    if(blurEffect){
+        drawBlur();
+    }
    //moveObject(player);
    //drawObject(player);
    for(var e in entities){
@@ -267,6 +267,8 @@ function update(){
 }
 update();
 
+
+
 function moveObject(object){
     if(!DEBUG && object.type !== "player"){
         object.x += object.vx;
@@ -300,58 +302,100 @@ function moveObject(object){
         }
     }
 }
-function drawObject(object){
-    ctx.save();
-    ctx.fillStyle = object.color;
-    if(object.gettingHit){
-        ctx.fillStyle = "#ff0000";
+
+function checkPlayerMove(){
+    if((keyMap.up && keyMap.down) || (!keyMap.up && !keyMap.down)){
+        player.vy = 0;
     }
-    ctx.fillRect(object.getCenterX(), object.getCenterY(), object.width, object.height);
-    //ctx.fillText(object.text, object.x, object.y);
+    else if(keyMap.up){
+        player.vy = -player.speed;
+    }
+    else if(keyMap.down){
+        player.vy = player.speed;
+    }
+    
+    
+    if((keyMap.left && keyMap.right) || (!keyMap.left && !keyMap.right)){
+        player.vx = 0;
+    }
+    else if(keyMap.left){
+        player.vx = -player.speed;
+    }
+    else if(keyMap.right){
+        player.vx = player.speed;
+    }
+}
+
+
+function drawBlur(){ //this is too slow to really use....
+    ctx.save();
+    ctx.lineWidth=5;
+    ctx.filter = 'blur(5px)';
+    var object;
+    
+    for(var e in entities){
+        object = entities[e];
+        ctx.strokeStyle = object.color;
+        ctx.strokeRect(object.getCenterX(), object.getCenterY(), object.width, object.height);
+    }
+    //should everything test whether its interacting with every other object
+    //would that be too slow
+    //
+    for(var b in bullets){
+        object = bullets[b];
+        ctx.strokeStyle = object.color;
+        ctx.strokeRect(object.getCenterX(), object.getCenterY(), object.width, object.height);
+    }
+    //move this back later
+    //var mouseHit = testPTPCollision(player, mousePosition);
+    object = player;
+    ctx.strokeStyle = object.color;
+    if(object.gettingHit){
+        ctx.strokeStyle = "#ff0000";
+    }
+    ctx.strokeRect(object.getCenterX(), object.getCenterY(), object.width, object.height);
+    
     ctx.restore();
 }
 
-function getDistanceBetweenPoints(point1, point2){ //point to point
-    var dx = point1.x - point2.x;
-    var dy = point1.y - point2.y;
-    return Math.sqrt(dx*dx+dy*dy); //returns distance between two points
-}
-
-function testRTRCollision(rect1, rect2){
-    return rect1.getCenterX() <= rect2.getCenterX() + rect2.width
-        && rect2.getCenterX() <= rect1.getCenterX() + rect1.width
-        && rect1.getCenterY() <= rect2.getCenterY() + rect2.height
-        && rect2.getCenterY() <= rect1.getCenterY() + rect1.height;
-}
-
-function testPTPCollision(entity1, entity2){ //point to point
-    var distance = getDistanceBetweenPoints(entity1, entity2);
-    return distance < 30;
-}
-
-//get mouse position information
-
-document.onmousemove = function(mouse){
-    mousePosition.x = mouse.clientX - canvas.getBoundingClientRect().left;
-    mousePosition.y = mouse.clientY - canvas.getBoundingClientRect().top;
-    //setting this value here actually causes a glitch where if you arent moving the mouse shots will not change angle.
-    player.aimAngle = Math.atan2(mousePosition.y - player.y, mousePosition.x - player.x) / Math.PI * 180; //why is this converted from radians to degrees?
-                                                                                    //because it's getting converted back into radians
-    if(DEBUG){
-        player.x = mousePosition.x;
-        player.y = mousePosition.y;
+function drawObject(object){
+    //ctx.save();
+    ctx.strokeStyle = object.color;
+    if(object.gettingHit){
+        ctx.strokeStyle = "#ff0000";
     }
-};
+    //ctx.fillRect(object.getCenterX(), object.getCenterY(), object.width, object.height);
+    //ctx.save();
+    ctx.lineWidth=3;
+    //ctx.filter = 'blur(3px)';
+    
+    ctx.strokeRect(object.getCenterX(), object.getCenterY(), object.width, object.height);
+    //ctx.restore();
+    //ctx.shadowOffsetX = 0;
+    //ctx.shadowOffsetY = 0;
+    //ctx.shadowBlur = 5;
+    //ctx.fillText(object.text, object.x, object.y);
+   // ctx.restore();
+    //ctx.save();
+    //ctx.strokeStyle = object.color;
+    //ctx.strokeRect(object.getCenterX(), object.getCenterY(), object.width, object.height);
+    //ctx.restore();
+}
 
-document.onclick = function(event){
-   performAttack(player);
-};
+function drawMouseCords(){
+    var text = "("+mousePosition.x+", "+mousePosition.y+")";
+    ctx.save();
+    ctx.font = "10px Arial";
+    ctx.fillText(text, mousePosition.x, mousePosition.y);
+    ctx.restore();
+}
 
-document.oncontextmenu = function(event){ //right click
-    event.preventDefault();
-    //performCircularAttack(player, 10);
-    performMultiAttack(player, 2, 5);
-};
+
+
+
+
+
+
 
 function performAttack(entity){
     if(entity.timer > 60){ // every 1 sec
@@ -387,14 +431,35 @@ function performCircularAttack(entity, amount){
 }
 
 
-function drawMouseCords(){
-    var text = "("+mousePosition.x+", "+mousePosition.y+")";
-    ctx.save();
-    ctx.font = "10px Arial";
-    ctx.fillText(text, mousePosition.x, mousePosition.y);
-    ctx.restore();
-}
 
+
+
+
+//input
+  //mouse
+document.onmousemove = function(mouse){  //get mouse position information
+    mousePosition.x = mouse.clientX - canvas.getBoundingClientRect().left;
+    mousePosition.y = mouse.clientY - canvas.getBoundingClientRect().top;
+    //setting this value here actually causes a glitch where if you arent moving the mouse shots will not change angle.
+    player.aimAngle = Math.atan2(mousePosition.y - player.y, mousePosition.x - player.x) / Math.PI * 180; //why is this converted from radians to degrees?
+                                                                                    //because it's getting converted back into radians
+    if(DEBUG){
+        player.x = mousePosition.x;
+        player.y = mousePosition.y;
+    }
+};
+
+document.onclick = function(event){
+   performAttack(player);
+};
+
+document.oncontextmenu = function(event){ //right click
+    event.preventDefault();
+    //performCircularAttack(player, 10);
+    performMultiAttack(player, 2, 5);
+};
+
+  //keyboard
 document.onkeydown = function(event){
     if(event.key === "ArrowDown"){
         keyMap.down = true;
@@ -431,25 +496,29 @@ document.onkeyup = function(event){
     }
 };
 
-function checkPlayerMove(){
-    if((keyMap.up && keyMap.down) || (!keyMap.up && !keyMap.down)){
-        player.vy = 0;
-    }
-    else if(keyMap.up){
-        player.vy = -player.speed;
-    }
-    else if(keyMap.down){
-        player.vy = player.speed;
-    }
-    
-    
-    if((keyMap.left && keyMap.right) || (!keyMap.left && !keyMap.right)){
-        player.vx = 0;
-    }
-    else if(keyMap.left){
-        player.vx = -player.speed;
-    }
-    else if(keyMap.right){
-        player.vx = player.speed;
-    }
+
+
+//support functions
+
+function genRandomInRange(range, min){
+   var base = Math.floor(Math.random() * range);
+   return base + min;
+}
+
+function getDistanceBetweenPoints(point1, point2){ //point to point
+    var dx = point1.x - point2.x;
+    var dy = point1.y - point2.y;
+    return Math.sqrt(dx*dx+dy*dy); //returns distance between two points
+}
+
+function testRTRCollision(rect1, rect2){
+    return rect1.getCenterX() <= rect2.getCenterX() + rect2.width
+        && rect2.getCenterX() <= rect1.getCenterX() + rect1.width
+        && rect1.getCenterY() <= rect2.getCenterY() + rect2.height
+        && rect2.getCenterY() <= rect1.getCenterY() + rect1.height;
+}
+
+function testPTPCollision(entity1, entity2){ //point to point
+    var distance = getDistanceBetweenPoints(entity1, entity2);
+    return distance < 30;
 }
