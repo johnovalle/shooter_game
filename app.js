@@ -8,6 +8,20 @@ var drawingSurface = {
     height: 500
 };
 
+var game = {
+    state: {
+        player: null
+    },
+    level: [], // example { enemies: [], powerups: [], stairs: [] },
+    screen: {
+        loading: {},
+        start: {},
+        options: {},
+        play: {},
+        gameOvaer: {}
+    }
+}
+
 var Entity = {
     x: 0,
     y: 0,
