@@ -22,14 +22,16 @@ var game = {
     screen: {
         loading: {
             number: 2,
-            controlMap: {}
+            controlMap: {},
+            entities: []
         },
         start: {
             number: 5,
             controlMap: {
                 "ArrowUp": increaseNumber,
                 "ArrowDown": decreaseNumber
-            }
+            },
+            entities: []
         },
         options: {},
         play: {
@@ -37,7 +39,8 @@ var game = {
             controlMap: {
                 "w": increaseNumber,
                 "s": decreaseNumber
-            }
+            },
+            entities: []
         },
         gameOver: {}
     }
@@ -55,6 +58,31 @@ var Entity = {
     char: "",
     visible: true
 }
+// tell entities how to move themselves
+var monster = Object.create(Entity);
+monster.char = "A";
+monster.x = 50;
+monster.y = 100;
+monster.vx = 1;
+
+var monster2 = Object.create(Entity);
+monster2.char = "B";
+monster2.x = 350;
+monster2.y = 400;
+monster2.vy = -1;
+
+game.screen.start.entities.push(monster);
+game.screen.start.entities.push(monster2);
+
+var monster3 = Object.create(Entity);
+monster3.char = "C3";
+monster3.x = 250;
+monster3.y = 30;
+monster3.vy = 1;
+
+game.screen.play.entities.push(monster3);
+
+
 
 game.screen.loading.colorPad = { //cornflower
     r: 30,
@@ -97,37 +125,49 @@ addEventListener("keydown", (event) => {
     if(game.state.current.controlMap[event.key]){
         game.state.current.controlMap[event.key](game.state.current);
     }
-    // if(event.key === "ArrowDown"){
-    //
-    // } else if(event.key === "ArrowUp"){
-    //
-    // }
 });
 
 
-function update(){
+function run(){
+    update(game.state.current);
+    draw(game.state.current);
+    requestAnimationFrame(run);
+}
+run();
+
+function update(state){
+    for(let i = 0; i < state.entities.length; i++){
+        let entity = state.entities[i];
+        entity.x += entity.vx;
+        entity.y += entity.vy;
+    }
+}
+
+function draw(state){
     ctx.clearRect(0, 0, drawingSurface.width, drawingSurface.height);
-    ctx.fillStyle = "rgb(" + game.state.current.colorPad.r + "," +
-                              game.state.current.colorPad.g + "," +
-                              game.state.current.colorPad.b + ")";
-
-
-    //colorPad.r += 1;
-    //colorPad.g += 2;
-    //colorPad.b += 3;
-    //for(var color in colorPad){
-    //    if(colorPad[color] > 255){
-    //        colorPad[color] -= 255;
-    //    }
-    //}
+    ctx.fillStyle = "rgb(" + state.colorPad.r + "," +
+                              state.colorPad.g + "," +
+                              state.colorPad.b + ")";
     ctx.fillRect(0, 0, drawingSurface.width, drawingSurface.height);
     ctx.fillStyle = "#000";
     ctx.font = "30px Arial";
-    ctx.fillText(game.state.current.number,10,50);
-    requestAnimationFrame(update);
+    ctx.fillText(state.number,10,50);
+
+    for(let i = 0; i < state.entities.length; i++){
+        let entity = state.entities[i];
+        ctx.fillText(entity.char,entity.x,entity.y);
+    }
 }
-update();
 
 function degreeToRadian(degree){
     return (degree/180) * Math.PI; // degree * (Math.PI/180)
 }
+
+//colorPad.r += 1;
+//colorPad.g += 2;
+//colorPad.b += 3;
+//for(var color in colorPad){
+//    if(colorPad[color] > 255){
+//        colorPad[color] -= 255;
+//    }
+//}
