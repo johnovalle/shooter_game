@@ -8,21 +8,36 @@ var drawingSurface = {
     height: 500
 };
 
+// different controls on different screens
+// maintain positions and stats for enemies/objects on a level
+// incorperate code to draw tile level and place a guy and have him go from level to level
+// with a start screen
+
 var game = {
     state: {
-        player: null
+        player: null,
+        current: null
     },
     level: [], // example { enemies: [], powerups: [], stairs: [] },
     screen: {
         loading: {
-            number: 2
+            number: 2,
+            controlMap: {}
         },
         start: {
-            number: 5
+            number: 5,
+            controlMap: {
+                "ArrowUp": increaseNumber,
+                "ArrowDown": decreaseNumber
+            }
         },
         options: {},
         play: {
-            number: 50
+            number: 50,
+            controlMap: {
+                "w": increaseNumber,
+                "s": decreaseNumber
+            }
         },
         gameOver: {}
     }
@@ -37,6 +52,7 @@ var Entity = {
     vy: 0,
     rotation: 0,
     type: "",
+    char: "",
     visible: true
 }
 
@@ -58,31 +74,42 @@ game.screen.play.colorPad = { //watermelon
     b: 70
 };
 
-var  currentState = game.screen.loading;
+game.state.current = game.screen.loading;
+
+function increaseNumber(state){
+    state.number++;
+}
+
+function decreaseNumber(state){
+    state.number--;
+}
 
 addEventListener("keydown", (event) => {
     console.log(event.key);
     if(event.key === "1"){
-        currentState = game.screen.loading;
+        game.state.current = game.screen.loading;
     } else if(event.key === "2") {
-        currentState = game.screen.start;
+        game.state.current = game.screen.start;
     } else if(event.key === "3") {
-        currentState = game.screen.play;
+        game.state.current = game.screen.play;
     }
 
-    if(event.key === "ArrowDown"){
-        currentState.number--;
-    } else if(event.key === "ArrowUp"){
-        currentState.number++;
+    if(game.state.current.controlMap[event.key]){
+        game.state.current.controlMap[event.key](game.state.current);
     }
+    // if(event.key === "ArrowDown"){
+    //
+    // } else if(event.key === "ArrowUp"){
+    //
+    // }
 });
 
 
 function update(){
     ctx.clearRect(0, 0, drawingSurface.width, drawingSurface.height);
-    ctx.fillStyle = "rgb(" + currentState.colorPad.r + "," +
-                              currentState.colorPad.g + "," +
-                              currentState.colorPad.b + ")";
+    ctx.fillStyle = "rgb(" + game.state.current.colorPad.r + "," +
+                              game.state.current.colorPad.g + "," +
+                              game.state.current.colorPad.b + ")";
 
 
     //colorPad.r += 1;
@@ -96,7 +123,7 @@ function update(){
     ctx.fillRect(0, 0, drawingSurface.width, drawingSurface.height);
     ctx.fillStyle = "#000";
     ctx.font = "30px Arial";
-    ctx.fillText(currentState.number,10,50);
+    ctx.fillText(game.state.current.number,10,50);
     requestAnimationFrame(update);
 }
 update();
